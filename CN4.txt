@@ -1,0 +1,128 @@
+Write a Socket program to implement CALCULATOR in client-server socket using TCP
+protocol.
+Ans: -
+To perform this at first, we have to create two separate Java files on our directory one for Server and 
+other one for the Client with the help of ‘vim’ editor. Then we can write the code to setup 
+TCPCalculatorServer and TCPCalculatorClient locally.
+
+TCPCalculatorServer:
+        import java.io.*;
+        import java.net.*;
+
+
+        public class TCPCalculatorServer {
+          public static void main(String[] args) {
+            try (ServerSocket serverSocket = new ServerSocket(6789)) {
+              System.out.println("Calculator Server is listening on port 6789");
+              while (true) {
+               new CalculatorThread(serverSocket.accept()).start();
+              }
+           } catch (IOException ex) {
+
+             System.out.println("Server exception: " + ex.getMessage());
+             ex.printStackTrace();
+          }
+         }
+        }
+        
+        class CalculatorThread extends Thread {
+          private Socket socket;
+
+          public CalculatorThread(Socket socket) {
+            this.socket = socket;
+          }
+          
+          public void run() {
+            try (InputStream input = socket.getInputStream();
+              BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+              OutputStream output = socket.getOutputStream();
+              PrintWriter writer = new PrintWriter(output, true)) {
+
+              String expression;
+              while ((expression = reader.readLine()) != null) {
+                 System.out.println("Received expression: " + expression);
+                 String result = calculate(expression);
+                 writer.println(result);
+              }
+             } catch (IOException ex) {
+               System.out.println("Server thread exception: " + ex.getMessage());
+               ex.printStackTrace();
+             }
+            }
+
+            private String calculate(String expression) {
+              try {
+                String[] tokens = expression.split(" ");
+                
+                if (tokens.length != 3) {
+                   return "Error: Invalid expression format. Use: <number1> <operator> <number2>";
+                }
+
+                double num1 = Double.parseDouble(tokens[0]);
+                String operator = tokens[1];
+                double num2 = Double.parseDouble(tokens[2])
+                
+                double result;
+                switch (operator) {
+                  case "+":
+                    result = num1 + num2;
+                    break;
+                  case "-":
+                    result = num1 - num2;
+                    break;
+                  case "*":
+                    result = num1 * num2;
+                    break;
+                  case "/":
+                    if (num2 == 0) {
+                      return "Error: Division by zero";
+                    }
+                    result = num1 / num2;
+                    break;
+                  default:
+                    return "Error: Invalid operator. Use one of +, -, *, /";
+               }
+               return "Result: " + result;
+             } catch (NumberFormatException e) {
+               return "Error: Invalid number format";
+             }
+            }
+           }
+
+TCPCalculatorClient:
+
+            import java.io.*;
+            import java.net.*;
+
+            public class TCPCalculatorClient {
+              public static void main(String[] args) {
+                String hostname = "localhost";
+                int port = 6789;
+
+                try(Socket socket = new Socket(hostname, port);
+                  OutputStream output = socket.getOutputStream();
+                  PrintWriter writer = new PrintWriter(output, true);
+                  InputStream input = socket.getInputStream();
+                  BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+                  BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in))) {
+
+                  String expression;
+                  while (true) {
+                    System.out.print("Enter expression (or 'exit' to quit): ");
+                    expression = consoleReader.readLine();
+                    if("exit".equalsIgnoreCase(expression)) {
+                      break;
+                    }
+                    writer.println(expression);
+                    String response = reader.readLine();
+                    System.out.println(response);
+                 }
+               } catch (UnknownHostException ex) {
+                  System.out.println("Server not found: " + ex.getMessage());
+               } catch (IOException ex) {
+                  System.out.println("I/O error: " + ex.getMessage());
+               }
+              }
+             }
+
+
